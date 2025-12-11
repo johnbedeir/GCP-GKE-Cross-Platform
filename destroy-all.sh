@@ -119,22 +119,84 @@ fi
 echo ""
 
 ####################################################################################################
-### STEP 4: Destroy VPC and Networking                                                            ###
+### STEP 4: Clean up GKE-managed Firewall Rules                                                  ###
 ####################################################################################################
 
-print_step "Step 4: Destroying VPC and Networking infrastructure..."
+print_step "Step 4: Cleaning up GKE-managed firewall rules..."
+echo "GKE automatically creates firewall rules that may not be tracked by Terraform."
+echo "These need to be deleted before the VPC can be destroyed."
+echo ""
+
+# Get the project ID from gcloud config or terraform
+PROJECT_ID=$(gcloud config get-value project 2>/dev/null || terraform output -raw project_id 2>/dev/null || echo "johnydev")
+
+# Get the network name - try to find it from gcloud or use pattern
+# Network name pattern: gke-vpc-${name_region}
+NETWORK_NAME=$(gcloud compute networks list \
+    --project="$PROJECT_ID" \
+    --filter="name~'^gke-vpc-'" \
+    --format="value(name)" 2>/dev/null | head -n 1)
+
+if [ -z "$NETWORK_NAME" ]; then
+    # Fallback: try to get from terraform state or use default pattern
+    NAME_REGION=$(terraform output -raw name_region 2>/dev/null || echo "us-east1")
+    NETWORK_NAME="gke-vpc-${NAME_REGION}"
+fi
+
+echo "Network: $NETWORK_NAME"
+echo "Project: $PROJECT_ID"
+echo ""
+
+# Delete all firewall rules associated with the network
+# GKE creates firewall rules with names like k8s-* for health checks and other purposes
+print_warning "Deleting all firewall rules for network: $NETWORK_NAME"
+
+# Get all firewall rules for the network and delete them
+echo "Checking for firewall rules on network: $NETWORK_NAME"
+FIREWALL_RULES=$(gcloud compute firewall-rules list \
+    --project="$PROJECT_ID" \
+    --filter="network:${NETWORK_NAME}" \
+    --format="value(name)" 2>/dev/null)
+
+if [ -n "$FIREWALL_RULES" ]; then
+    echo "Found firewall rules to delete:"
+    RULE_COUNT=0
+    for rule in $FIREWALL_RULES; do
+        if [ -n "$rule" ]; then
+            echo "  - $rule"
+            if gcloud compute firewall-rules delete "$rule" \
+                --project="$PROJECT_ID" \
+                --quiet 2>/dev/null; then
+                ((RULE_COUNT++))
+            else
+                print_warning "Failed to delete firewall rule: $rule"
+            fi
+        fi
+    done
+    
+    if [ $RULE_COUNT -gt 0 ]; then
+        echo ""
+        echo "Deleted $RULE_COUNT firewall rule(s). Waiting 10 seconds for rules to be fully deleted..."
+        sleep 10
+    fi
+else
+    echo "No firewall rules found for network: $NETWORK_NAME"
+fi
+echo ""
+
+####################################################################################################
+### STEP 5: Destroy VPC and Networking                                                            ###
+####################################################################################################
+
+print_step "Step 5: Destroying VPC and Networking infrastructure..."
 echo "This includes:"
-echo "  - Firewall Rules"
 echo "  - Cloud Router and Cloud NAT"
 echo "  - Private Subnets for GKE Prod and GitOps"
 echo "  - Public Subnets"
 echo "  - VPC Network"
 echo ""
 
-terraform destroy -target=google_compute_firewall.gke_gitops_to_prod_api \
-                  -target=google_compute_firewall.gke_master_to_nodes \
-                  -target=google_compute_firewall.gke_cluster_internal \
-                  -target=google_compute_router_nat.main \
+terraform destroy -target=google_compute_router_nat.main \
                   -target=google_compute_router.nat_router \
                   -target=google_compute_address.nat_gateway \
                   -target=google_compute_subnetwork.private_gke_gitops \
@@ -148,12 +210,16 @@ if [ $? -ne 0 ]; then
     print_warning "Check for:"
     print_warning "  - Firewall rules blocking VPC deletion"
     print_warning "  - Load balancers using subnets"
+    print_warning ""
+    print_warning "To manually delete remaining firewall rules:"
+    print_warning "  gcloud compute firewall-rules list --project=$PROJECT_ID --filter=\"network:${NETWORK_NAME}\""
+    print_warning "  gcloud compute firewall-rules delete <rule-name> --project=$PROJECT_ID"
     exit 1
 fi
 echo ""
 
 ####################################################################################################
-### STEP 5: Destroy Secrets                                                                      ###
+### STEP 6: Destroy Secrets                                                                      ###
 ####################################################################################################
 
 print_step "Step 5: Destroying GCP Secret Manager secrets..."
@@ -170,7 +236,7 @@ terraform destroy -target=google_secret_manager_secret_version.gitops_datadog_ap
 echo ""
 
 ####################################################################################################
-### STEP 6: Final Destroy (Catch any remaining resources)                                        ###
+### STEP 7: Final Destroy (Catch any remaining resources)                                        ###
 ####################################################################################################
 
 print_step "Step 6: Performing final 'terraform destroy' to catch any remaining resources..."
@@ -183,7 +249,7 @@ fi
 echo ""
 
 ####################################################################################################
-### STEP 7: Cleanup Verification                                                                 ###
+### STEP 8: Cleanup Verification                                                                 ###
 ####################################################################################################
 
 print_step "Step 7: Verifying cleanup..."
