@@ -14,7 +14,7 @@ resource "google_service_account" "argocd_cross_cluster_access" {
   project      = var.project_id
 }
 
-# Grant permissions for ArgoCD to access GKE clusters
+# Grant permissions for ArgoCD to access GKE Prod clusters
 resource "google_project_iam_member" "argocd_cross_cluster_gke" {
   count   = var.enable_argocd ? 1 : 0
   project = var.project_id
