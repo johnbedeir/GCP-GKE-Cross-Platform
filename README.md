@@ -1,5 +1,7 @@
 # GCP-GKE-Cross-Platform
 
+<img src=cover.png>
+
 A Terraform-based infrastructure as code project for deploying Google Kubernetes Engine (GKE) clusters with GitOps capabilities using ArgoCD. This project creates two GKE clusters: a Production cluster and a GitOps cluster for managing deployments.
 
 ## 🏗️ Architecture
