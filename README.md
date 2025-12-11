@@ -268,13 +268,6 @@ Clusters are accessible from `0.0.0.0/0` (all IPs) for tools like `k9s` and `kub
 - **Google Managed Prometheus (GMP)**: Automatic monitoring via GCP
 - **Cloud Logging**: Automatic log collection via Fluent Bit
 
-## 📝 Notes
-
-- **Cluster Names**: Follow pattern `gke-{name}-{environment}` (e.g., `gke-prod-production`)
-- **Service Accounts**: Follow pattern `gk{name}-{purpose}` (e.g., `gkprod-cluster-sa`)
-- **Secrets**: Stored in GCP Secret Manager, not in Kubernetes secrets directly
-- **ArgoCD**: Accessible via LoadBalancer service (internet-facing)
-
 ## 🔗 Useful Commands
 
 ```bash
