@@ -1,0 +1,105 @@
+# Terraform Variables Configuration Example
+# Copy this file to terraform.tfvars and fill in your actual values
+# cp terraform.tfvars.example terraform.tfvars
+
+####################################################################################################
+### GCP Project & Region Configuration
+####################################################################################################
+
+# TODO: Replace with your GCP Project ID
+project_id        = "YOUR_GCP_PROJECT_ID" # Your GCP Project ID
+region            = "us-east1" # GCP region (e.g., us-east1, europe-west1)
+replicated_region = "us-west1" # Region for replication (can be same as region)
+
+az_primary   = "us-east1-a" # Primary availability zone
+az_secondary = "us-east1-b" # Secondary availability zone
+
+####################################################################################################
+### VPC & Networking Configuration
+####################################################################################################
+
+vpc_cidr = "10.0.0.0/16" # VPC CIDR block
+
+# GKE Production Subnets (2 subnets for high availability)
+# Using /22 (1024 IPs) instead of /24 (256 IPs) to avoid IP exhaustion
+# Using new CIDR ranges to avoid overlap with existing subnets
+# 10.0.20.0/22 = 10.0.20.0 - 10.0.23.255 (1024 IPs)
+# 10.0.24.0/22 = 10.0.24.0 - 10.0.27.255 (1024 IPs)
+private_gke_prod_subnets = ["10.0.20.0/22", "10.0.24.0/22"]
+
+# GKE GitOps Subnets (2 subnets for high availability)
+# Using /22 (1024 IPs) instead of /24 (256 IPs) to avoid IP exhaustion
+# Using new CIDR ranges to avoid overlap with existing subnets
+# /22 subnets must be aligned on /22 boundaries (multiples of 1024)
+# 10.0.32.0/22 = 10.0.32.0 - 10.0.35.255 (1024 IPs) - properly aligned
+# 10.0.36.0/22 = 10.0.36.0 - 10.0.39.255 (1024 IPs) - properly aligned
+private_gke_gitops_subnets = ["10.0.32.0/22", "10.0.36.0/22"]
+
+# Public Subnets (for Cloud NAT and Load Balancers)
+public_subnets = ["10.0.101.0/24", "10.0.102.0/24"]
+
+####################################################################################################
+### Budget Labels
+####################################################################################################
+
+networking_budget = "networking" # Budget label for networking resources
+proc_budget       = "processing" # Budget label for processing resources
+env_tag           = "prod"       # Environment tag (prod, dev, staging)
+name_region       = "us-east1"   # Region name for resource naming (e.g., us-east1, eu-00)
+
+####################################################################################################
+### GKE Production Cluster Configuration
+####################################################################################################
+
+name_prefix  = "gke-prod"         # Prefix for GKE production cluster
+environment  = "production"       # Environment name
+cluster_name = "gke-prod-cluster" # Full cluster name
+
+gke_version = "1.32" # Kubernetes version (e.g., 1.28, 1.29)
+
+# Node Pool Configuration
+node_pool_new_machine_type = ["e2-medium"] # Machine types (e.g., ["e2-medium", "e2-standard-2"])
+node_pool_new_desired_size = 1             # Desired number of nodes (matching AWS: 1 node)
+node_pool_new_min_size     = 1             # Minimum number of nodes
+node_pool_new_max_size     = 3             # Maximum number of nodes
+
+# Kubernetes Access
+# TODO: Replace with your GCP user emails (e.g., ["user@example.com"])
+admin_users = [
+  "YOUR_EMAIL@example.com"
+]
+
+# Datadog Configuration
+# TODO: Replace with your actual Datadog API key (will be stored in Secret Manager)
+datadog_api_secret_name = "datadog-api-key"                  # Name of the Datadog API key in GCP Secret Manager
+datadog_api_key_value   = "YOUR_DATADOG_API_KEY_HERE" # Your actual Datadog API key (will be stored in Secret Manager)
+
+####################################################################################################
+### GKE GitOps Cluster Configuration
+####################################################################################################
+
+gitops_name_prefix  = "gke-gitops"         # Prefix for GitOps cluster
+gitops_environment  = "production"         # Environment name
+gitops_cluster_name = "gke-gitops-cluster" # Full GitOps cluster name
+
+gitops_gke_version = "1.32" # Kubernetes version for GitOps cluster
+
+# GitOps Node Pool Configuration
+# Sized for ArgoCD + Chartmuseum + supporting services (Metrics Server, Autoscaler, Datadog)
+# e2-standard-2: 2 vCPU, 8GB RAM - sufficient for GitOps workloads
+gitops_node_pool_machine_type = ["e2-standard-2"] # Machine types for GitOps cluster
+gitops_node_pool_desired_size = 2                 # Desired number of nodes (2 for HA)
+gitops_node_pool_min_size     = 2                 # Minimum number of nodes (2 for HA)
+gitops_node_pool_max_size     = 4                 # Maximum number of nodes (increased for scaling)
+
+# GitOps Kubernetes Access
+# TODO: Replace with your GCP user emails (e.g., ["user@example.com"])
+gitops_admin_users = [
+  "YOUR_EMAIL@example.com"
+]
+
+# GitOps Datadog Configuration
+# TODO: Replace with your actual Datadog API key (will be stored in Secret Manager)
+gitops_datadog_api_secret_name = "datadog-api-key-gitops"           # Name of the Datadog API key for GitOps cluster in GCP Secret Manager
+gitops_datadog_api_key_value   = "YOUR_DATADOG_API_KEY_HERE" # Your actual Datadog API key for GitOps (will be stored in Secret Manager)
+
