@@ -100,10 +100,10 @@ Authenticate with both clusters to verify access:
 
 ```bash
 # Authenticate with Production cluster
-gcloud container clusters get-credentials gke-prod-production --region us-east1 --project johnydev
+gcloud container clusters get-credentials gke-prod-production --region us-east1 --project YOUR_PROJECT_ID
 
 # Authenticate with GitOps cluster
-gcloud container clusters get-credentials gke-gitops-production --region us-east1 --project johnydev
+gcloud container clusters get-credentials gke-gitops-production --region us-east1 --project YOUR_PROJECT_ID
 ```
 
 ### Step 2: Create Namespace on Production Cluster
@@ -112,7 +112,7 @@ Switch to the Production cluster context and create a test namespace:
 
 ```bash
 # Ensure you're using the prod cluster
-kubectl config use-context gke_johnydev_us-east1_gke-prod-production
+gcloud container clusters get-credentials gke-gitops-production --region us-east1 --project YOUR_PROJECT_ID
 
 # Create test namespace
 kubectl create namespace test
@@ -168,13 +168,13 @@ Check the application status in ArgoCD UI or via CLI:
 
 ```bash
 # Switch to GitOps cluster
-kubectl config use-context gke_johnydev_us-east1_gke-gitops-production
+gcloud container clusters get-credentials gke-prod-production --region us-east1 --project YOUR_PROJECT_ID
 
 # Check application status
 kubectl get application hello-world -n argocd
 
 # Switch to Production cluster and verify pods
-kubectl config use-context gke_johnydev_us-east1_gke-prod-production
+gcloud container clusters get-credentials gke-gitops-production --region us-east1 --project YOUR_PROJECT_ID
 kubectl get pods -n test
 kubectl get svc -n test
 ```
@@ -274,8 +274,8 @@ Clusters are accessible from `0.0.0.0/0` (all IPs) for tools like `k9s` and `kub
 
 ```bash
 # Get cluster endpoints
-gcloud container clusters describe gke-prod-production --region us-east1 --project johnydev --format='value(endpoint)'
-gcloud container clusters describe gke-gitops-production --region us-east1 --project johnydev --format='value(endpoint)'
+gcloud container clusters describe gke-prod-production --region us-east1 --project YOUR_PROJECT_ID --format='value(endpoint)'
+gcloud container clusters describe gke-gitops-production --region us-east1 --project YOUR_PROJECT_ID --format='value(endpoint)'
 
 # List all nodes
 kubectl get nodes
@@ -287,6 +287,6 @@ kubectl get applications -n argocd
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
 # Switch cluster context
-kubectl config use-context gke_johnydev_us-east1_gke-prod-production
-kubectl config use-context gke_johnydev_us-east1_gke-gitops-production
+gcloud container clusters get-credentials gke-gitops-production --region us-east1 --project YOUR_PROJECT_ID
+gcloud container clusters get-credentials gke-prod-production --region us-east1 --project YOUR_PROJECT_ID
 ```
