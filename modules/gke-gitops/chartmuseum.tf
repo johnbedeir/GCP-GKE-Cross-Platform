@@ -4,6 +4,7 @@
 ###                                                                                              ###
 ####################################################################################################
 
+# TO USE INTERNAL LOAD BALANCER, CHANGE THE ANNOTATIONS TO "ALB"
 locals {
   chartmuseum_values = <<EOF
     env:
